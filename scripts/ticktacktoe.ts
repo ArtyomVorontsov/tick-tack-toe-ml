@@ -1,4 +1,4 @@
-let { defaultPositions, winPositions } = require('./gamePositions');
+let { defaultPositions, winPositions, strategies } = require('./gamePositions');
 let readlineSync = require('readline-sync');
 
 
@@ -28,7 +28,7 @@ class TickTackToeImpl implements TickTackToe {
         this.playersAmount = players.length;
     }
 
-    public get getCurrentGamePositions(): (string | boolean)[]{
+    public get getCurrentGamePositions(): (string | boolean)[] {
         return this.currentGamePositions;
     }
 
@@ -44,7 +44,7 @@ class TickTackToeImpl implements TickTackToe {
         return this.playersAmount;
     }
 
-    public isGameEnded(): boolean{
+    public isGameEnded(): boolean {
         return !this.currentGamePositions.includes(false) || this.winPositionTriggered;
     }
 
@@ -117,6 +117,81 @@ function terminalIO(tickTackToe: TickTackToe): void {
         isGameEnded = tickTackToe.isGameEnded();
         console.log(isGameEnded)
     } while (!isGameEnded);
+}
+
+type Strategies = Array<Array<Array<string | boolean>>>
+
+class Bot {
+
+    private currentStrategyId: number;
+    private currentMove: number;
+
+    constructor(
+        private botSymbol: string,
+        private secondPlayerSymbol: string,
+        private strategies: Strategies
+    ) { }
+
+    makeMove(currentPositions: (string | boolean)[]): (string | boolean)[] {
+        const strategyIsActual = this.checkIsStrategyIsActual(this.currentStrategyId, currentPositions)
+        if (strategyIsActual) {
+            this.computeCurrentMove(currentPositions);
+            const strategyNextMove = strategies[this.currentStrategyId][this.currentMove + 1];
+            return this.fillStrategyWithPlayerSymbols(strategyNextMove, this.botSymbol, this.secondPlayerSymbol);
+            
+        } else {
+            this.currentStrategyId = this.chooseStategy()
+            if (this.currentStrategyId) {
+                this.makeRandomMove();
+            }
+        }
+    }
+
+    chooseStategy(): number {
+        return 0;
+    }
+
+    checkIsStrategyIsActual(
+        strategyId: number,
+        currentPositions: (string | boolean)[]
+    ): boolean {
+        return true
+    }
+
+    makeRandomMove(): void {
+
+    }
+
+    computeCurrentMove(currentPositions: (string | boolean)[]) {
+        let moves = currentPositions.filter((position) => {
+            if (position) {
+                return true;
+            }
+        })
+
+        this.currentMove = moves.length;
+    }
+
+    fillStrategyWithPlayerSymbols(
+        strategy: (string | boolean)[],
+        botSymbol: string,
+        secondPlayerSymbol: string
+    ) {
+
+        const filledStrategy = strategy.map((strategySymbol: string) => {
+            if (strategySymbol === "w") {
+                return botSymbol
+            } 
+            else if (strategySymbol === "l") {
+                return secondPlayerSymbol
+            } 
+            else {
+                return false
+            }
+        })
+
+        return filledStrategy;
+    }
 }
 
 const ticktacktoe = new TickTackToeImpl(defaultPositions, ["x", "y"]);
