@@ -25,7 +25,7 @@ class TickTackToeImpl implements TickTackToe {
     ) {
         this.currentGamePositions = [...defaultPositions]
         this.players = players;
-        this.playersAmount = players.length;
+        this.playersAmount = players.length - 1;
     }
 
     public get getCurrentGamePositions(): (string | boolean)[] {
@@ -50,20 +50,17 @@ class TickTackToeImpl implements TickTackToe {
 
     public makeMove(userMove: number): void {
         if (this.currentGamePositions.includes(false) && !this.winPositionTriggered) {
-            this.currentPlayer = this.computeMove(this.currentPlayer, this.playersAmount);
-
-            // interact with user
-            this.setMoveResult(userMove, this.players[this.currentPlayer - 1]);
+            this.setMove(userMove, this.players[this.currentPlayer]);
+            this.computeNextPlayer(this.currentPlayer, this.playersAmount);
             this.winPositionTriggered = this.checkWin(this.currentGamePositions, winPositions, this.players);
         }
     }
 
-    private computeMove(currentPlayer: number, playersAmount: number) {
-        playersAmount !== currentPlayer ? ++currentPlayer : currentPlayer = 1;
-        return currentPlayer;
+    private computeNextPlayer(currentPlayer: number, playersAmount: number) {
+        playersAmount <= currentPlayer ? this.currentPlayer = 0 : this.currentPlayer = currentPlayer + 1;
     }
 
-    private setMoveResult(
+    private setMove(
         position: number,
         playerSymbol: string
     ) {
@@ -103,27 +100,51 @@ class TickTackToeImpl implements TickTackToe {
 
 function terminalIO(tickTackToe: TickTackToe): void {
     let isGameEnded = false;
+    const botPlayerId = 0;
+    const botPlayer = new Bot('x', 'y', strategies);    
     do {
         let currentPlayer = tickTackToe.getCurrentPlayer;
+        
         console.log("Playing user: " + currentPlayer);
-        let userOutput = Number(readlineSync.question('Your next turn ? '));
-
-        tickTackToe.makeMove(userOutput);
-
-        console.log('Your turn is ' + userOutput);
-        console.log('==============================');
-        console.log(JSON.stringify(tickTackToe.getCurrentGamePositions))
-        console.log('==============================');
+        if(currentPlayer === botPlayerId){
+            let botOutput = botPlayer.makeMove(tickTackToe.getCurrentGamePositions);
+            tickTackToe.makeMove(botOutput.moveIndex);
+            console.log('Bot turn is ' + botOutput.moveIndex);
+            console.log('==============================');
+            console.log(
+                `
+                ${JSON.stringify(tickTackToe.getCurrentGamePositions.slice(0,3))}\n
+                ${JSON.stringify(tickTackToe.getCurrentGamePositions.slice(3,6))}\n
+                ${JSON.stringify(tickTackToe.getCurrentGamePositions.slice(6,9))}\n
+                `
+            )
+            console.log('==============================');
+        }else{
+            let userOutput = Number(readlineSync.question('Your next turn ? '));
+            tickTackToe.makeMove(userOutput);
+            console.log('Your turn is ' + userOutput);
+            console.log('==============================');
+            console.log(
+                `
+                ${JSON.stringify(tickTackToe.getCurrentGamePositions.slice(0,3))}\n
+                ${JSON.stringify(tickTackToe.getCurrentGamePositions.slice(3,6))}\n
+                ${JSON.stringify(tickTackToe.getCurrentGamePositions.slice(6,9))}\n
+                `
+            )
+            console.log('==============================');
+        }
+        
         isGameEnded = tickTackToe.isGameEnded();
         console.log(isGameEnded)
     } while (!isGameEnded);
 }
 
 type Strategies = Array<Array<Array<string | boolean>>>
+type GamePositions = (string | boolean)[];
 
 class Bot {
 
-    private currentStrategyId: number;
+    private currentStrategyId: number | null = null;
     private currentMove: number;
 
     constructor(
@@ -132,48 +153,123 @@ class Bot {
         private strategies: Strategies
     ) { }
 
-    makeMove(currentPositions: (string | boolean)[]): (string | boolean)[] {
-        const strategyIsActual = this.checkIsStrategyIsActual(this.currentStrategyId, currentPositions)
+    makeMove(currentPositions: GamePositions): {gamePositions: GamePositions, moveIndex: number} {
+        let strategyNextMove: GamePositions = [];
+        currentPositions = this.fillCurrentPositionsWithStrategySymbols(currentPositions, this.botSymbol, this.secondPlayerSymbol);
+
+        const currentMove = this.computeCurrentMove(currentPositions);
+
+        // Statement below executes on bot first move 
+        if(this.currentStrategyId === null){
+            this.currentStrategyId = this.chooseStategy(currentPositions, currentMove)
+        }
+        
+        console.log({currentStrategyId: this.currentStrategyId, currentMove, currentPositions});
+        const strategyIsActual = this.checkStrategyIsActual(this.currentStrategyId, currentMove, currentPositions)
+
         if (strategyIsActual) {
-            this.computeCurrentMove(currentPositions);
-            const strategyNextMove = strategies[this.currentStrategyId][this.currentMove + 1];
-            return this.fillStrategyWithPlayerSymbols(strategyNextMove, this.botSymbol, this.secondPlayerSymbol);
+            strategyNextMove = this.strategies[this.currentStrategyId][currentMove + 1];
             
         } else {
-            this.currentStrategyId = this.chooseStategy()
-            if (this.currentStrategyId) {
-                this.makeRandomMove();
+            this.currentStrategyId = this.chooseStategy(currentPositions, currentMove)
+            if (this.currentStrategyId === null) {
+                strategyNextMove = this.makeRandomMove(currentPositions);
+            }else{
+                strategyNextMove = this.makeMove(currentPositions).gamePositions
             }
         }
+
+        return {
+            gamePositions: this.fillStrategyWithPlayerSymbols(strategyNextMove, this.botSymbol, this.secondPlayerSymbol),
+            moveIndex: this.getMoveIndex(currentPositions, strategyNextMove) 
+        };
     }
 
-    chooseStategy(): number {
-        return 0;
+    chooseStategy(currentPositions: GamePositions, currentMove: number): number | null {
+        let newStrategyId = null;
+        this.strategies.forEach((strategy, index) => {
+            let strategyMatched = true;
+            strategy[currentMove].forEach((strategyPosition, index) => {
+                if(strategyPosition !== currentPositions[index]){
+                    strategyMatched = false;
+                }
+            })
+            if(strategyMatched) newStrategyId = index;
+        })
+
+        return newStrategyId;
     }
 
-    checkIsStrategyIsActual(
+    checkStrategyIsActual(
         strategyId: number,
-        currentPositions: (string | boolean)[]
+        currentMove: number,
+        currentPositions: GamePositions
     ): boolean {
-        return true
+        let strategyIsActual = true;
+        const currentStrategyPositions = this.strategies[strategyId][currentMove];
+
+        currentPositions.forEach((position, index) => {
+            if(position !== currentStrategyPositions[index]){
+                strategyIsActual = false;
+            };
+        })
+
+        return strategyIsActual;
     }
 
-    makeRandomMove(): void {
+    makeRandomMove(currentPositions: GamePositions): GamePositions {
+        const availablePositions: number[] = [];
+        currentPositions.forEach((position, index) => {
+            if(!position){
+                availablePositions.push(index)
+            }
+        })
 
+        const randomIndex = Math.round(Math.random() * availablePositions.length-1);
+        const randomAvailablePositionIndex =  availablePositions[randomIndex];
+        const newPositions = [...currentPositions]
+
+        // Make move
+        newPositions[randomAvailablePositionIndex] = 'w';
+
+        console.log({
+            newPositions
+        })
+        return newPositions;
     }
 
-    computeCurrentMove(currentPositions: (string | boolean)[]) {
+    computeCurrentMove(currentPositions: GamePositions): number {
         let moves = currentPositions.filter((position) => {
             if (position) {
                 return true;
             }
         })
 
-        this.currentMove = moves.length;
+        return moves.length
+    }
+
+    fillCurrentPositionsWithStrategySymbols(
+        currentPositions: GamePositions,
+        botSymbol: string,
+        secondPlayerSymbol: string
+    ){
+        const filledStrategy = currentPositions.map((playerSymbol: string) => {
+            if (playerSymbol === botSymbol) {
+                return "w"
+            } 
+            else if (playerSymbol === secondPlayerSymbol) {
+                return "l"
+            } 
+            else {
+                return false
+            }
+        })
+
+        return filledStrategy;
     }
 
     fillStrategyWithPlayerSymbols(
-        strategy: (string | boolean)[],
+        strategy: GamePositions,
         botSymbol: string,
         secondPlayerSymbol: string
     ) {
@@ -192,7 +288,20 @@ class Bot {
 
         return filledStrategy;
     }
+
+
+    getMoveIndex(currentGamePosition: GamePositions, nextGamePositions: GamePositions): number{
+        let moveIndex: number;
+        currentGamePosition.forEach((position, index) => {
+            if(position !== nextGamePositions[index]){
+                moveIndex = index;
+            }
+        })
+
+        return moveIndex;
+    }
 }
 
 const ticktacktoe = new TickTackToeImpl(defaultPositions, ["x", "y"]);
+
 terminalIO(ticktacktoe);

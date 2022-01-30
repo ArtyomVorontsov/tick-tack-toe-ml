@@ -54,6 +54,17 @@ export const defaultPositions: (string | boolean)[] = [
 export const strategies = [
     [
         [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ],
+        [
             "w",
             false,
             false,

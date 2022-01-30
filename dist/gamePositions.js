@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defaultPositions = exports.winPositions = void 0;
+exports.strategies = exports.defaultPositions = exports.winPositions = void 0;
 exports.winPositions = [
     // | | |
     [
@@ -50,5 +50,119 @@ exports.defaultPositions = [
     false, false, false,
     false, false, false,
     false, false, false
+];
+exports.strategies = [
+    [
+        [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ],
+        [
+            "w",
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ],
+        [
+            "w",
+            "l",
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ],
+        [
+            "w",
+            "l",
+            false,
+            "w",
+            false,
+            false,
+            false,
+            false,
+            false
+        ],
+        [
+            "w",
+            "l",
+            false,
+            "w",
+            "l",
+            false,
+            false,
+            false,
+            false
+        ],
+        [
+            "w",
+            "l",
+            false,
+            "w",
+            "l",
+            false,
+            "w",
+            false,
+            false
+        ],
+        [
+            "w",
+            "l",
+            false,
+            "w",
+            "l",
+            false,
+            "w",
+            false,
+            false
+        ],
+        [
+            "w",
+            "l",
+            false,
+            "w",
+            "l",
+            false,
+            "w",
+            false,
+            false
+        ],
+        [
+            "w",
+            "l",
+            false,
+            "w",
+            "l",
+            false,
+            "w",
+            false,
+            false
+        ],
+        [
+            "w",
+            "l",
+            false,
+            "w",
+            "l",
+            false,
+            "w",
+            false,
+            false
+        ]
+    ]
 ];
 //# sourceMappingURL=gamePositions.js.map
