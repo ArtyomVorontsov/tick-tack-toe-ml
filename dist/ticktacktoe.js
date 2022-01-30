@@ -51,16 +51,13 @@ var TickTackToeImpl = /** @class */ (function () {
     };
     TickTackToeImpl.prototype.makeMove = function (userMove) {
         if (this.currentGamePositions.includes(false) && !this.winPositionTriggered) {
-            // Interact with user
             this.setMove(userMove, this.players[this.currentPlayer]);
             this.computeNextPlayer(this.currentPlayer, this.playersAmount);
             this.winPositionTriggered = this.checkWin(this.currentGamePositions, winPositions, this.players);
         }
     };
     TickTackToeImpl.prototype.computeNextPlayer = function (currentPlayer, playersAmount) {
-        console.log({ currentPlayer: currentPlayer, playersAmount: playersAmount });
         playersAmount <= currentPlayer ? this.currentPlayer = 0 : this.currentPlayer = currentPlayer + 1;
-        console.log({ currentPlayer: this.currentPlayer, playersAmount: this.playersAmount });
     };
     TickTackToeImpl.prototype.setMove = function (position, playerSymbol) {
         this.currentGamePositions[position] = playerSymbol;
@@ -132,8 +129,8 @@ var Bot = /** @class */ (function () {
         if (this.currentStrategyId === null) {
             this.currentStrategyId = this.chooseStategy(currentPositions, currentMove);
         }
-        console.log({ currentStrategyId: this.currentStrategyId, currentMove: currentMove, currentPositions: currentPositions });
-        var strategyIsActual = this.checkStrategyIsActual(this.currentStrategyId, currentMove, currentPositions);
+        console.log({ currentStrategyId: this.currentStrategyId, csid: !!this.currentStrategyId, currentMove: currentMove, currentPositions: currentPositions });
+        var strategyIsActual = this.currentStrategyId !== null && this.checkStrategyIsActual(this.currentStrategyId, currentMove, currentPositions);
         if (strategyIsActual) {
             strategyNextMove = this.strategies[this.currentStrategyId][currentMove + 1];
         }
@@ -186,7 +183,6 @@ var Bot = /** @class */ (function () {
         var randomIndex = Math.round(Math.random() * availablePositions.length - 1);
         var randomAvailablePositionIndex = availablePositions[randomIndex];
         var newPositions = __spreadArray([], currentPositions, true);
-        //console.log({newPositions, randomAvailablePositionIndex, randomIndex, availablePositions})
         // Make move
         newPositions[randomAvailablePositionIndex] = 'w';
         console.log({
@@ -242,9 +238,5 @@ var Bot = /** @class */ (function () {
     return Bot;
 }());
 var ticktacktoe = new TickTackToeImpl(defaultPositions, ["x", "y"]);
-//const bot = new Bot('x', 'o', strategies);
-//console.log(bot.makeMove([false, false, false, false, false, false, false, false, false]));
-//console.log(bot.makeMove(['x', 'o', false, false, false, false, false, false, false]));
-//console.log(bot.makeMove(['x', 'o', false, 'x', false, false,  'o', false, false]));
 terminalIO(ticktacktoe);
 //# sourceMappingURL=ticktacktoe.js.map

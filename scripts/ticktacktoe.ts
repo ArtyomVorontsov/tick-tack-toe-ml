@@ -164,8 +164,8 @@ class Bot {
             this.currentStrategyId = this.chooseStategy(currentPositions, currentMove)
         }
         
-        console.log({currentStrategyId: this.currentStrategyId, currentMove, currentPositions});
-        const strategyIsActual = this.checkStrategyIsActual(this.currentStrategyId, currentMove, currentPositions)
+        console.log({currentStrategyId: this.currentStrategyId, csid: !!this.currentStrategyId, currentMove, currentPositions});
+        const strategyIsActual = this.currentStrategyId !== null && this.checkStrategyIsActual(this.currentStrategyId, currentMove, currentPositions)
 
         if (strategyIsActual) {
             strategyNextMove = this.strategies[this.currentStrategyId][currentMove + 1];
