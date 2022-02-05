@@ -9,11 +9,13 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 var _a = require('./gamePositions'), defaultPositions = _a.defaultPositions, winPositions = _a.winPositions, strategies = _a.strategies;
 var readlineSync = require('readline-sync');
+var fs = require('fs');
 var TickTackToeImpl = /** @class */ (function () {
     function TickTackToeImpl(defaultPositions, players) {
         if (players === void 0) { players = ["x", "y"]; }
         this.winPositionTriggered = false;
         this.currentPlayer = 0;
+        this.winnerSymbol = null;
         this.currentGamePositions = __spreadArray([], defaultPositions, true);
         this.players = players;
         this.playersAmount = players.length - 1;
@@ -46,14 +48,31 @@ var TickTackToeImpl = /** @class */ (function () {
         enumerable: false,
         configurable: true
     });
+    Object.defineProperty(TickTackToeImpl.prototype, "getWinnerSymbol", {
+        get: function () {
+            return this.winnerSymbol;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(TickTackToeImpl.prototype, "setWinnerSymbol", {
+        set: function (winnerSymbol) {
+            this.winnerSymbol = winnerSymbol;
+        },
+        enumerable: false,
+        configurable: true
+    });
     TickTackToeImpl.prototype.isGameEnded = function () {
         return !this.currentGamePositions.includes(false) || this.winPositionTriggered;
     };
     TickTackToeImpl.prototype.makeMove = function (userMove) {
         if (this.currentGamePositions.includes(false) && !this.winPositionTriggered) {
             this.setMove(userMove, this.players[this.currentPlayer]);
-            this.computeNextPlayer(this.currentPlayer, this.playersAmount);
             this.winPositionTriggered = this.checkWin(this.currentGamePositions, winPositions, this.players);
+            if (this.winPositionTriggered) {
+                this.setWinnerSymbol = this.players[this.currentPlayer];
+            }
+            this.computeNextPlayer(this.currentPlayer, this.playersAmount);
         }
     };
     TickTackToeImpl.prototype.computeNextPlayer = function (currentPlayer, playersAmount) {
@@ -87,7 +106,7 @@ var TickTackToeImpl = /** @class */ (function () {
     };
     return TickTackToeImpl;
 }());
-function terminalIO(tickTackToe) {
+function terminalIO(tickTackToe, learningModule) {
     var isGameEnded = false;
     var botPlayerId = 0;
     var botPlayer = new Bot('x', 'y', strategies);
@@ -101,6 +120,7 @@ function terminalIO(tickTackToe) {
             console.log('==============================');
             console.log("\n                ".concat(JSON.stringify(tickTackToe.getCurrentGamePositions.slice(0, 3)), "\n\n                ").concat(JSON.stringify(tickTackToe.getCurrentGamePositions.slice(3, 6)), "\n\n                ").concat(JSON.stringify(tickTackToe.getCurrentGamePositions.slice(6, 9)), "\n\n                "));
             console.log('==============================');
+            learningModule.setPosition(__spreadArray([], tickTackToe.getCurrentGamePositions, true));
         }
         else {
             var userOutput = Number(readlineSync.question('Your next turn ? '));
@@ -109,10 +129,14 @@ function terminalIO(tickTackToe) {
             console.log('==============================');
             console.log("\n                ".concat(JSON.stringify(tickTackToe.getCurrentGamePositions.slice(0, 3)), "\n\n                ").concat(JSON.stringify(tickTackToe.getCurrentGamePositions.slice(3, 6)), "\n\n                ").concat(JSON.stringify(tickTackToe.getCurrentGamePositions.slice(6, 9)), "\n\n                "));
             console.log('==============================');
+            learningModule.setPosition(__spreadArray([], tickTackToe.getCurrentGamePositions, true));
         }
         isGameEnded = tickTackToe.isGameEnded();
         console.log(isGameEnded);
     } while (!isGameEnded);
+    var winnerSymbol = tickTackToe.getWinnerSymbol;
+    console.log(winnerSymbol);
+    winnerSymbol && learningModule.saveStrategy(winnerSymbol);
 }
 var Bot = /** @class */ (function () {
     function Bot(botSymbol, secondPlayerSymbol, strategies) {
@@ -237,6 +261,49 @@ var Bot = /** @class */ (function () {
     };
     return Bot;
 }());
+var LearningModuleImpl = /** @class */ (function () {
+    function LearningModuleImpl() {
+        this.strategy = [];
+    }
+    LearningModuleImpl.prototype.setPosition = function (position) {
+        console.log(position);
+        this.strategy.push(position);
+    };
+    LearningModuleImpl.prototype.transformStrategy = function (winner) {
+        // todo: avoid mutability for strategy array, 
+        // create new array for transformedStrategy
+        var transformedStrategy = [];
+        this.strategy.forEach(function (positions, i) {
+            var transformedPositions = new Array(9);
+            positions.forEach(function (position, j) {
+                if (position === winner) {
+                    transformedPositions[j] = "w";
+                }
+                else if (position !== false) {
+                    transformedPositions[j] = "l";
+                }
+                else {
+                    transformedPositions[j] = false;
+                }
+            });
+            transformedStrategy.push(transformedPositions);
+        });
+        return transformedStrategy;
+    };
+    LearningModuleImpl.prototype.saveStrategy = function (winner) {
+        console.log(winner);
+        console.log(this.strategy);
+        var transformedStrategy = this.transformStrategy(winner);
+        var transformedStrategyJson = JSON.stringify(transformedStrategy);
+        fs.writeFile('strategy.json', transformedStrategyJson, function (err) {
+            if (err)
+                return console.log(err);
+            console.log('Strategy saved!');
+        });
+    };
+    return LearningModuleImpl;
+}());
 var ticktacktoe = new TickTackToeImpl(defaultPositions, ["x", "y"]);
-terminalIO(ticktacktoe);
+var learningModule = new LearningModuleImpl();
+terminalIO(ticktacktoe, learningModule);
 //# sourceMappingURL=ticktacktoe.js.map
