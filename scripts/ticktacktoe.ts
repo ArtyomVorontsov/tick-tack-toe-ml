@@ -47,11 +47,11 @@ class TickTackToeImpl implements TickTackToe {
         return this.playersAmount;
     }
 
-    public get getWinnerSymbol(): string | null{
+    public get getWinnerSymbol(): string | null {
         return this.winnerSymbol;
     }
 
-    private set setWinnerSymbol(winnerSymbol: string){
+    private set setWinnerSymbol(winnerSymbol: string) {
         this.winnerSymbol = winnerSymbol;
     }
 
@@ -63,7 +63,7 @@ class TickTackToeImpl implements TickTackToe {
         if (this.currentGamePositions.includes(false) && !this.winPositionTriggered) {
             this.setMove(userMove, this.players[this.currentPlayer]);
             this.winPositionTriggered = this.checkWin(this.currentGamePositions, winPositions, this.players);
-            if(this.winPositionTriggered){
+            if (this.winPositionTriggered) {
                 this.setWinnerSymbol = this.players[this.currentPlayer];
             }
             this.computeNextPlayer(this.currentPlayer, this.playersAmount);
@@ -155,6 +155,7 @@ function terminalIO(tickTackToe: TickTackToe, learningModule: LearningModuleImpl
         console.log(isGameEnded)
     } while (!isGameEnded);
 
+    learningModule.setPosition([...tickTackToe.getCurrentGamePositions]);
     const winnerSymbol = tickTackToe.getWinnerSymbol;
     console.log(winnerSymbol)
     winnerSymbol && learningModule.saveStrategy(winnerSymbol);
@@ -185,7 +186,11 @@ class Bot {
             this.currentStrategyId = this.chooseStategy(currentPositions, currentMove)
         }
 
-        console.log({ currentStrategyId: this.currentStrategyId, csid: !!this.currentStrategyId, currentMove, currentPositions });
+        console.log({
+            currentStrategyId: this.currentStrategyId, csid: !!this.currentStrategyId,
+            currentMove, currentPositions, botSymbol: this.botSymbol,
+            secondPlayerSymbol: this.secondPlayerSymbol
+        });
         const strategyIsActual = this.currentStrategyId !== null && this.checkStrategyIsActual(this.currentStrategyId, currentMove, currentPositions)
 
         if (strategyIsActual) {
@@ -210,7 +215,11 @@ class Bot {
         let newStrategyId = null;
         this.strategies.forEach((strategy, index) => {
             let strategyMatched = true;
-            strategy[currentMove].forEach((strategyPosition, index) => {
+            // Strategy is shorter than current game, so it cant be mathed.
+            if (strategy[currentMove] === undefined) {
+                strategyMatched = false;
+            }
+            strategy[currentMove] && strategy[currentMove].forEach((strategyPosition, index) => {
                 if (strategyPosition !== currentPositions[index]) {
                     strategyMatched = false;
                 }
@@ -245,8 +254,9 @@ class Bot {
                 availablePositions.push(index)
             }
         })
+        console.log({ availablePositions })
+        const randomIndex = Math.abs(Math.round(Math.random() * availablePositions.length - 1));
 
-        const randomIndex = Math.round(Math.random() * availablePositions.length - 1);
         const randomAvailablePositionIndex = availablePositions[randomIndex];
         const newPositions = [...currentPositions]
 
@@ -330,10 +340,21 @@ interface LearningModule {
 
 class LearningModuleImpl implements LearningModule {
 
-    private strategy: (boolean | string)[][] = []
+    private strategy: (boolean | string)[][] = [
+        [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ]
+    ]
 
     setPosition(position: (string | boolean)[]): void {
-        console.log(position)
         this.strategy.push(position);
     }
 
@@ -361,11 +382,15 @@ class LearningModuleImpl implements LearningModule {
     saveStrategy(winner: string): void {
         console.log(winner)
         console.log(this.strategy)
+
+        let allStrategies = fs.readFileSync('strategy.json', 'utf8');
+        allStrategies = JSON.parse(allStrategies);
         const transformedStrategy = this.transformStrategy(winner)
 
-        const transformedStrategyJson = JSON.stringify(transformedStrategy);
+        allStrategies.push(transformedStrategy)
+        const allStrategiesJson = JSON.stringify(allStrategies);
 
-        fs.writeFile('strategy.json', transformedStrategyJson, function (err) {
+        fs.writeFile('strategy.json', allStrategiesJson, function (err) {
             if (err) return console.log(err);
             console.log('Strategy saved!');
         });

@@ -134,6 +134,7 @@ function terminalIO(tickTackToe, learningModule) {
         isGameEnded = tickTackToe.isGameEnded();
         console.log(isGameEnded);
     } while (!isGameEnded);
+    learningModule.setPosition(__spreadArray([], tickTackToe.getCurrentGamePositions, true));
     var winnerSymbol = tickTackToe.getWinnerSymbol;
     console.log(winnerSymbol);
     winnerSymbol && learningModule.saveStrategy(winnerSymbol);
@@ -153,7 +154,13 @@ var Bot = /** @class */ (function () {
         if (this.currentStrategyId === null) {
             this.currentStrategyId = this.chooseStategy(currentPositions, currentMove);
         }
-        console.log({ currentStrategyId: this.currentStrategyId, csid: !!this.currentStrategyId, currentMove: currentMove, currentPositions: currentPositions });
+        console.log({
+            currentStrategyId: this.currentStrategyId, csid: !!this.currentStrategyId,
+            currentMove: currentMove,
+            currentPositions: currentPositions,
+            botSymbol: this.botSymbol,
+            secondPlayerSymbol: this.secondPlayerSymbol
+        });
         var strategyIsActual = this.currentStrategyId !== null && this.checkStrategyIsActual(this.currentStrategyId, currentMove, currentPositions);
         if (strategyIsActual) {
             strategyNextMove = this.strategies[this.currentStrategyId][currentMove + 1];
@@ -176,7 +183,11 @@ var Bot = /** @class */ (function () {
         var newStrategyId = null;
         this.strategies.forEach(function (strategy, index) {
             var strategyMatched = true;
-            strategy[currentMove].forEach(function (strategyPosition, index) {
+            // Strategy is shorter than current game, so it cant be mathed.
+            if (strategy[currentMove] === undefined) {
+                strategyMatched = false;
+            }
+            strategy[currentMove] && strategy[currentMove].forEach(function (strategyPosition, index) {
                 if (strategyPosition !== currentPositions[index]) {
                     strategyMatched = false;
                 }
@@ -204,7 +215,9 @@ var Bot = /** @class */ (function () {
                 availablePositions.push(index);
             }
         });
-        var randomIndex = Math.round(Math.random() * availablePositions.length - 1);
+        console.log({ availablePositions: availablePositions });
+        var randomIndex = Math.abs(Math.round(Math.random() * availablePositions.length - 1));
+        console.log({ randomIndex: randomIndex });
         var randomAvailablePositionIndex = availablePositions[randomIndex];
         var newPositions = __spreadArray([], currentPositions, true);
         // Make move
@@ -263,10 +276,21 @@ var Bot = /** @class */ (function () {
 }());
 var LearningModuleImpl = /** @class */ (function () {
     function LearningModuleImpl() {
-        this.strategy = [];
+        this.strategy = [
+            [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ]
+        ];
     }
     LearningModuleImpl.prototype.setPosition = function (position) {
-        console.log(position);
         this.strategy.push(position);
     };
     LearningModuleImpl.prototype.transformStrategy = function (winner) {
@@ -293,9 +317,12 @@ var LearningModuleImpl = /** @class */ (function () {
     LearningModuleImpl.prototype.saveStrategy = function (winner) {
         console.log(winner);
         console.log(this.strategy);
+        var allStrategies = fs.readFileSync('strategy.json', 'utf8');
+        allStrategies = JSON.parse(allStrategies);
         var transformedStrategy = this.transformStrategy(winner);
-        var transformedStrategyJson = JSON.stringify(transformedStrategy);
-        fs.writeFile('strategy.json', transformedStrategyJson, function (err) {
+        allStrategies.push(transformedStrategy);
+        var allStrategiesJson = JSON.stringify(allStrategies);
+        fs.writeFile('strategy.json', allStrategiesJson, function (err) {
             if (err)
                 return console.log(err);
             console.log('Strategy saved!');
