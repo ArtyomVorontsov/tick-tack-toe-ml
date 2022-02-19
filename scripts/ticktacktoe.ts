@@ -1,4 +1,4 @@
-const { defaultPositions, winPositions, strategies } = require('./gamePositions');
+const { defaultPositions, winPositions } = require('./gamePositions');
 const readlineSync = require('readline-sync');
 const fs = require('fs');
 
@@ -112,10 +112,8 @@ class TickTackToeImpl implements TickTackToe {
     }
 }
 
-function terminalIO(tickTackToe: TickTackToe, learningModule: LearningModuleImpl): void {
+function terminalIO(tickTackToe: TickTackToe, learningModule: LearningModuleImpl, botPlayer: Bot, botPlayerId: number = 0): void {
     let isGameEnded = false;
-    const botPlayerId = 0;
-    const botPlayer = new Bot('x', 'y', strategies);
     do {
         let currentPlayer = tickTackToe.getCurrentPlayer;
 
@@ -397,7 +395,18 @@ class LearningModuleImpl implements LearningModule {
     }
 }
 
+// Startup ticktacktoe game and learning module
 const ticktacktoe = new TickTackToeImpl(defaultPositions, ["x", "y"]);
 const learningModule = new LearningModuleImpl();
 
-terminalIO(ticktacktoe, learningModule);
+// Load all strategies
+let allStrategies = fs.readFileSync('strategy.json', 'utf8');
+allStrategies = JSON.parse(allStrategies);
+console.log("Amount of loaded strategies:" + allStrategies.length)
+
+// Startup bot
+const botPlayerId = 1;
+const botPlayer = new Bot('y', 'x', allStrategies);
+
+// Start terminal game
+terminalIO(ticktacktoe, learningModule, botPlayer, botPlayerId);

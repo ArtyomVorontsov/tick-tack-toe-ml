@@ -7,7 +7,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     return to.concat(ar || Array.prototype.slice.call(from));
 };
-var _a = require('./gamePositions'), defaultPositions = _a.defaultPositions, winPositions = _a.winPositions, strategies = _a.strategies;
+var _a = require('./gamePositions'), defaultPositions = _a.defaultPositions, winPositions = _a.winPositions;
 var readlineSync = require('readline-sync');
 var fs = require('fs');
 var TickTackToeImpl = /** @class */ (function () {
@@ -106,10 +106,9 @@ var TickTackToeImpl = /** @class */ (function () {
     };
     return TickTackToeImpl;
 }());
-function terminalIO(tickTackToe, learningModule) {
+function terminalIO(tickTackToe, learningModule, botPlayer, botPlayerId) {
+    if (botPlayerId === void 0) { botPlayerId = 0; }
     var isGameEnded = false;
-    var botPlayerId = 0;
-    var botPlayer = new Bot('x', 'y', strategies);
     do {
         var currentPlayer = tickTackToe.getCurrentPlayer;
         console.log("Playing user: " + currentPlayer);
@@ -217,7 +216,6 @@ var Bot = /** @class */ (function () {
         });
         console.log({ availablePositions: availablePositions });
         var randomIndex = Math.abs(Math.round(Math.random() * availablePositions.length - 1));
-        console.log({ randomIndex: randomIndex });
         var randomAvailablePositionIndex = availablePositions[randomIndex];
         var newPositions = __spreadArray([], currentPositions, true);
         // Make move
@@ -330,7 +328,16 @@ var LearningModuleImpl = /** @class */ (function () {
     };
     return LearningModuleImpl;
 }());
+// Startup ticktacktoe game and learning module
 var ticktacktoe = new TickTackToeImpl(defaultPositions, ["x", "y"]);
 var learningModule = new LearningModuleImpl();
-terminalIO(ticktacktoe, learningModule);
+// Load all strategies
+var allStrategies = fs.readFileSync('strategy.json', 'utf8');
+allStrategies = JSON.parse(allStrategies);
+console.log("Amount of loaded strategies:" + allStrategies.length);
+// Startup bot
+var botPlayerId = 1;
+var botPlayer = new Bot('y', 'x', allStrategies);
+// Start terminal game
+terminalIO(ticktacktoe, learningModule, botPlayer, botPlayerId);
 //# sourceMappingURL=ticktacktoe.js.map
